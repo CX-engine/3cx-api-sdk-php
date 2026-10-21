@@ -16,9 +16,9 @@ use Saloon\Http\Request;
  * Always filter by date range: an unfiltered/wide pull times out (504) on real
  * data volumes — this is documented 3CX behavior. Prefer
  * {@see \CXEngine\ThreeCx\Requests\Reports\GetCallLogDataRequest} where possible:
- * on lacostedbe.on3cx.fr this entity returned an empty set (`@odata.count: 0`)
- * even unfiltered, while `ReportCallLogData` returned thousands of real rows for
- * the same period — this view may not be populated/enabled on every host.
+ * on some hosts this entity returned an empty set (`@odata.count: 0`) even
+ * unfiltered, while `ReportCallLogData` returned real rows for the same period —
+ * this view may not be populated/enabled on every host.
  */
 class ListCallHistoryViewRequest extends Request
 {

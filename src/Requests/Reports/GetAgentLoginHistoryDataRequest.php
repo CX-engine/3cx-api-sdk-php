@@ -12,7 +12,7 @@ use Carbon\CarbonInterface;
  * per queue, per login session: `loggedInDt`/`LoggedOutDt` timestamps and
  * `LoggedInInterval`/`TalkingInterval` ISO-8601 durations. This is the source for
  * "who was logged into which queue, and when" — confirmed live against
- * lacostedbe.on3cx.fr with real session data, no gotchas found (unlike
+ * live testing with real session data, no gotchas found (unlike
  * {@see GetCallLogDataRequest}).
  */
 class GetAgentLoginHistoryDataRequest extends ReportRequest

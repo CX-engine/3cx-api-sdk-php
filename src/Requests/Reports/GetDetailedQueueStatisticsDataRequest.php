@@ -15,12 +15,12 @@ use Carbon\CarbonInterface;
  * `AvgRingTime`, `TalkTime`/`AvgTalkTime`, `CallbacksCount`. Not-answered count is
  * `CallsCount - AnsweredCount` (3CX doesn't return it as its own field).
  *
- * Cross-checked live against lacostedbe.on3cx.fr for one day: `CallsCount`/
- * `AnsweredCount` here matched `QueueReceivedCount`/`QueueAnsweredCount` from
- * {@see GetQueuePerformanceOverviewDataRequest} exactly (queue 80300: 71/37 both
- * routes), and `AnsweredCount` summed across all queues (402) matched the count of
- * `CallType=Queue` segments with `Status="Waiting"` in the raw
- * `ReportCallLogData` output for the same day — i.e. this is a reliable,
+ * Cross-checked live: `CallsCount`/`AnsweredCount` here matched
+ * `QueueReceivedCount`/`QueueAnsweredCount` from
+ * {@see GetQueuePerformanceOverviewDataRequest} exactly, and `AnsweredCount`
+ * summed across all queues matched the count of `CallType=Queue` segments with
+ * `Status="Waiting"` in the raw `ReportCallLogData` output for the same day —
+ * i.e. this is a reliable,
  * pre-aggregated alternative to reconstructing answered/unanswered from raw CDR
  * segments, which is NOT straightforward: a queue segment's own `Answered` field
  * is `true` for every queue leg regardless of outcome (it means "this segment

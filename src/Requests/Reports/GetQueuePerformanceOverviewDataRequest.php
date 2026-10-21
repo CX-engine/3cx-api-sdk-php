@@ -21,7 +21,7 @@ use Carbon\CarbonInterface;
  * breakdown, prefer {@see GetDetailedQueueStatisticsDataRequest} — one row per
  * queue, no fan-out.
  *
- * Gotcha (confirmed live against lacostedbe.on3cx.fr, same class of bug as
+ * Gotcha (same class of bug as
  * {@see GetCallLogDataRequest}'s `callTimeFilterFrom`/`callTimeFilterTo`):
  * `waitInterval=''` silently returns **zero rows** regardless of the period or
  * `queueDns`. A real duration literal (`'00:00:00'` for "no minimum wait
