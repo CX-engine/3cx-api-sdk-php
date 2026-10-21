@@ -1,0 +1,21 @@
+{
+    "name": "cx-engine/3cx-api-sdk-php",
+    "description": "PHP SDK / connector for the 3CX XAPI (OData v4 REST API at /xapi/v1)",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "CXEngine\\ThreeCx\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Guilherme",
+            "email": "guilherme@bluerocktel.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "nesbot/carbon": ">=2.68",
+        "saloonphp/saloon": "^4.0"
+    }
+}
