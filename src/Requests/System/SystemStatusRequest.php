@@ -1,5 +1,8 @@
 <?php
 
+declare(strict_types=1);
+
+
 namespace CXEngine\ThreeCx\Requests\System;
 
 use Saloon\Enums\Method;

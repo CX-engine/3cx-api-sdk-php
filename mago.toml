@@ -12,4 +12,7 @@ single-quote = true
 trailing-comma = true
 
 [linter]
-rules = []
+
+[linter.rules.excessive-parameter-list]
+# Constructor threshold is raised for DTOs that group API parameters.
+constructor-threshold = 10

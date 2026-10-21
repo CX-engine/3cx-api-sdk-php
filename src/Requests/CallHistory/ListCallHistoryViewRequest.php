@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
+
 namespace CXEngine\ThreeCx\Requests\CallHistory;
 
 use Carbon\CarbonInterface;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
-use Saloon\Traits\Body\HasJsonBody;
+
 
 /**
  * `GET /CallHistoryView` — raw OData entity, one row per call segment/leg.

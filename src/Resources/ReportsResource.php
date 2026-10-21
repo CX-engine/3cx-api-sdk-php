@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CXEngine\ThreeCx\Resources;
 
 use Carbon\CarbonInterface;
 use Saloon\Http\Response;
 use CXEngine\ThreeCx\Requests\Reports as Endpoints;
+use CXEngine\ThreeCx\Requests\Reports\CallLogFilters;
 
 /**
  * Wraps the `Report*` family of XAPI OData functions used for scheduled exports.
@@ -13,40 +16,18 @@ class ReportsResource extends Resource
 {
     /**
      * Full call log (JSON) for a period. See {@see Endpoints\GetCallLogDataRequest}
-     * for the `callTimeFilterFrom`/`callTimeFilterTo` gotcha this method defaults
-     * around.
+     * for the `callTimeFilterFrom`/`callTimeFilterTo` gotcha this method defaults around.
      */
     public function callLog(
         CarbonInterface $periodFrom,
         CarbonInterface $periodTo,
-        int $sourceType = 0,
-        string $sourceFilter = '',
-        int $destinationType = 0,
-        string $destinationFilter = '',
-        int $callsType = 0,
-        int $callTimeFilterType = 0,
-        string $callTimeFilterFrom = '00:00:00',
-        string $callTimeFilterTo = '23:59:59',
-        bool $hidePcalls = false,
+        CallLogFilters $filters = new CallLogFilters(),
     ): Response {
-        return $this->connector->send(new Endpoints\GetCallLogDataRequest(
-            $periodFrom,
-            $periodTo,
-            $sourceType,
-            $sourceFilter,
-            $destinationType,
-            $destinationFilter,
-            $callsType,
-            $callTimeFilterType,
-            $callTimeFilterFrom,
-            $callTimeFilterTo,
-            $hidePcalls,
-        ));
+        return $this->connector->send(new Endpoints\GetCallLogDataRequest($periodFrom, $periodTo, $filters));
     }
 
     /**
-     * Convenience wrapper: full previous-day call log in the given timezone.
-     * This is the route for the "yesterday's data" morning export.
+     * Convenience wrapper: full previous-day call log.
      */
     public function callLogForDate(CarbonInterface $date, string $timezone = 'UTC'): Response
     {
@@ -57,7 +38,19 @@ class ReportsResource extends Resource
     }
 
     /**
-     * Convenience wrapper: CSV variant of {@see callLogForDate()} for the given date.
+     * CSV variant of {@see callLog()} — same filters, `Content-Type: text/csv` body.
+     */
+    public function downloadCallLog(
+        CarbonInterface $periodFrom,
+        CarbonInterface $periodTo,
+        string $clientTimeZone = 'UTC',
+        CallLogFilters $filters = new CallLogFilters(),
+    ): Response {
+        return $this->connector->send(new Endpoints\DownloadCallLogRequest($periodFrom, $periodTo, $clientTimeZone, $filters));
+    }
+
+    /**
+     * Convenience wrapper: CSV variant of {@see callLogForDate()}.
      */
     public function downloadCallLogForDate(CarbonInterface $date, string $timezone = 'UTC'): Response
     {
@@ -68,41 +61,8 @@ class ReportsResource extends Resource
     }
 
     /**
-     * CSV variant of {@see callLog()} — same filters, `Content-Type: text/csv` body.
-     */
-    public function downloadCallLog(
-        CarbonInterface $periodFrom,
-        CarbonInterface $periodTo,
-        string $clientTimeZone = 'UTC',
-        int $sourceType = 0,
-        string $sourceFilter = '',
-        int $destinationType = 0,
-        string $destinationFilter = '',
-        int $callsType = 0,
-        int $callTimeFilterType = 0,
-        string $callTimeFilterFrom = '00:00:00',
-        string $callTimeFilterTo = '23:59:59',
-        bool $hidePcalls = false,
-    ): Response {
-        return $this->connector->send(new Endpoints\DownloadCallLogRequest(
-            $periodFrom,
-            $periodTo,
-            $clientTimeZone,
-            $sourceType,
-            $sourceFilter,
-            $destinationType,
-            $destinationFilter,
-            $callsType,
-            $callTimeFilterType,
-            $callTimeFilterFrom,
-            $callTimeFilterTo,
-            $hidePcalls,
-        ));
-    }
-
-    /**
-     * Per-agent, per-queue login/logout sessions for a period — "who was logged
-     * into which queue, when, and for how long", including talk-time intervals.
+     * Per-agent, per-queue login/logout sessions for a period — who was logged
+     * into which queue, when, and for how long, including talk-time intervals.
      */
     public function agentLoginHistory(
         CarbonInterface $startDt,
@@ -132,13 +92,11 @@ class ReportsResource extends Resource
     }
 
     /**
-     * The cleanest source for "answered vs. total calls per queue" — one row per
-     * queue: `CallsCount`, `AnsweredCount`, `RingTime`/`AvgRingTime`,
-     * `TalkTime`/`AvgTalkTime`, `CallbacksCount`. Not-answered = `CallsCount -
-     * AnsweredCount`. Prefer this over reconstructing counts from
-     * {@see callLog()}'s raw segments — see
-     * {@see Endpoints\GetDetailedQueueStatisticsDataRequest} for why that's
-     * unreliable.
+     * The cleanest source for "answered vs. total calls per queue" — one row per queue:
+     * `CallsCount`, `AnsweredCount`, `RingTime`/`AvgRingTime`, `TalkTime`/`AvgTalkTime`,
+     * `CallbacksCount`. Prefer this over reconstructing counts from {@see callLog()}'s
+     * raw segments — see {@see Endpoints\GetDetailedQueueStatisticsDataRequest} for why
+     * that's unreliable.
      */
     public function detailedQueueStatistics(
         CarbonInterface $startDt,
@@ -166,11 +124,9 @@ class ReportsResource extends Resource
     }
 
     /**
-     * Per queue, per agent: `QueueReceivedCount`/`QueueAnsweredCount` (repeated
-     * per agent row) plus that agent's own `ExtensionAnsweredCount`/
-     * `ExtensionDroppedCount`/`TalkTime`. Use {@see detailedQueueStatistics()}
-     * instead if you only need the queue-level total/answered counts, not the
-     * per-agent breakdown.
+     * Per queue, per agent: `QueueReceivedCount`/`QueueAnsweredCount` (repeated per agent row)
+     * plus that agent's own `ExtensionAnsweredCount`/`ExtensionDroppedCount`/`TalkTime`.
+     * Use {@see detailedQueueStatistics()} instead if you only need queue-level totals.
      */
     public function queuePerformanceOverview(
         CarbonInterface $periodFrom,

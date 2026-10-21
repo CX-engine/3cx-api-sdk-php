@@ -1,5 +1,8 @@
 <?php
 
+declare(strict_types=1);
+
+
 namespace CXEngine\ThreeCx\Requests\Reports;
 
 use Carbon\CarbonInterface;
@@ -24,6 +27,6 @@ abstract class ReportRequest extends Request
 
     protected function odataString(string $value): string
     {
-        return "'".str_replace("'", "''", $value)."'";
+        return "'" . str_replace(search: "'", replace: "''", subject: $value) . "'";
     }
 }

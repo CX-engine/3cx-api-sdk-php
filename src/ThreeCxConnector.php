@@ -1,18 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CXEngine\ThreeCx;
 
 use Saloon\Http\Connector;
 use Saloon\Http\PendingRequest;
-use Saloon\Http\Auth\TokenAuthenticator;
-use CXEngine\ThreeCx\Requests\Auth\TokenRequest;
-use CXEngine\ThreeCx\Exceptions\AuthenticationException;
+use CXEngine\ThreeCx\Concerns\HasOAuth2ClientCredentials;
 
 /**
  * Connector for a single 3CX host's XAPI (`/xapi/v1/...`, OData v4).
  *
  * Auth is OAuth2 client_credentials against `/connect/token` (host root, not
- * `/xapi/v1`). The client must be created in that host's Admin Console under
+ * `/xapi/v1`). The client must be created in the Admin Console under
  * Integrations > API, with its Department set to the tenant's own operating
  * department (not a reseller/support department) and Role = System Owner —
  * otherwise every XAPI call 403s even with a valid token.
@@ -22,9 +22,7 @@ use CXEngine\ThreeCx\Exceptions\AuthenticationException;
  */
 class ThreeCxConnector extends Connector
 {
-    protected ?string $accessToken = null;
-
-    protected ?int $accessTokenExpiresAt = null;
+    use HasOAuth2ClientCredentials;
 
     public function __construct(
         protected readonly string $hostName,
@@ -32,8 +30,7 @@ class ThreeCxConnector extends Connector
         protected readonly string $clientId,
         #[\SensitiveParameter]
         protected readonly string $clientSecret,
-    ) {
-    }
+    ) {}
 
     public function resolveBaseUrl(): string
     {
@@ -43,47 +40,6 @@ class ThreeCxConnector extends Connector
     public function boot(PendingRequest $pendingRequest): void
     {
         $this->authenticatePendingRequest($pendingRequest);
-    }
-
-    protected function authenticatePendingRequest(PendingRequest $pendingRequest): void
-    {
-        if ($pendingRequest->getRequest() instanceof TokenRequest) {
-            return;
-        }
-
-        if ($pendingRequest->hasMockClient()) {
-            return;
-        }
-
-        $pendingRequest->authenticate(new TokenAuthenticator($this->getAccessToken()));
-    }
-
-    public function getAccessToken(): string
-    {
-        if ($this->accessToken === null || $this->accessTokenExpiresAt <= time()) {
-            $this->refreshAccessToken();
-        }
-
-        return $this->accessToken;
-    }
-
-    protected function refreshAccessToken(): void
-    {
-        $response = $this->send(new TokenRequest($this->clientId, $this->clientSecret));
-
-        if ($response->failed()) {
-            throw new AuthenticationException(
-                "Failed to authenticate with 3CX XAPI on {$this->hostName} ({$response->status()}). ".
-                'Check client_id/client_secret, and that the API client\'s Department (Admin Console > '.
-                'Integrations > API) is the tenant\'s own operating department with the System Owner role.'
-            );
-        }
-
-        $body = $response->json();
-
-        $this->accessToken = $body['access_token'];
-        // Renew a little early so a request started right at the edge of expiry doesn't 401 mid-flight.
-        $this->accessTokenExpiresAt = time() + ($body['expires_in'] ?? 3600) - 30;
     }
 
     protected function defaultHeaders(): array
@@ -109,9 +65,8 @@ class ThreeCxConnector extends Connector
     }
 
     /**
-     * Raw `CallHistoryView` OData entity (per-segment CDR). See ReportsResource for
-     * the recommended `ReportCallLogData`-based alternative, which proved more
-     * reliable in testing.
+     * Raw `CallHistoryView` OData entity (per-segment CDR). Prefer `reports()->callLog()`
+     * — `CallHistoryView` returns empty or 500s on date filters on some hosts.
      */
     public function callHistory(): Resources\CallHistoryResource
     {
@@ -135,10 +90,7 @@ class ThreeCxConnector extends Connector
     }
 
     /**
-     * Live, per-call snapshot of every call currently in progress — the only
-     * genuinely real-time route in this package (everything else is
-     * historical/config). See `ListActiveCallsRequest` for field shape and
-     * the caveats on attributing a call to an agent/queue.
+     * Live, per-call snapshot of every call currently in progress.
      */
     public function activeCalls(): Resources\ActiveCallsResource
     {
