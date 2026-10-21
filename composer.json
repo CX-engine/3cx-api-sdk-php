@@ -7,6 +7,11 @@
             "CXEngine\\ThreeCx\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Guilherme",
@@ -17,5 +22,13 @@
         "php": ">=8.2",
         "nesbot/carbon": ">=2.68",
         "saloonphp/saloon": "^4.0"
+    },
+    "require-dev": {
+        "pestphp/pest": "^5.3"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     }
 }
