@@ -6,7 +6,9 @@ namespace CXEngine\ThreeCx;
 
 use Saloon\Http\Connector;
 use Saloon\Http\PendingRequest;
-use CXEngine\ThreeCx\Concerns\HasOAuth2ClientCredentials;
+use Saloon\Http\Auth\TokenAuthenticator;
+use CXEngine\ThreeCx\Exceptions\AuthenticationException;
+use CXEngine\ThreeCx\Requests\Auth\TokenRequest;
 
 /**
  * Connector for a single 3CX host's XAPI (`/xapi/v1/...`, OData v4).
@@ -22,7 +24,9 @@ use CXEngine\ThreeCx\Concerns\HasOAuth2ClientCredentials;
  */
 class ThreeCxConnector extends Connector
 {
-    use HasOAuth2ClientCredentials;
+    protected ?string $accessToken = null;
+
+    protected ?int $accessTokenExpiresAt = null;
 
     public function __construct(
         protected readonly string $hostName,
@@ -40,6 +44,47 @@ class ThreeCxConnector extends Connector
     public function boot(PendingRequest $pendingRequest): void
     {
         $this->authenticatePendingRequest($pendingRequest);
+    }
+
+    protected function authenticatePendingRequest(PendingRequest $pendingRequest): void
+    {
+        if ($pendingRequest->getRequest() instanceof TokenRequest) {
+            return;
+        }
+
+        if ($pendingRequest->hasMockClient()) {
+            return;
+        }
+
+        $pendingRequest->authenticate(new TokenAuthenticator($this->getAccessToken()));
+    }
+
+    public function getAccessToken(): string
+    {
+        if ($this->accessToken === null || $this->accessTokenExpiresAt === null || $this->accessTokenExpiresAt <= time()) {
+            $this->refreshAccessToken();
+        }
+
+        return $this->accessToken ?? throw new AuthenticationException('Access token is not available after refresh.');
+    }
+
+    protected function refreshAccessToken(): void
+    {
+        $response = $this->send(new TokenRequest($this->clientId, $this->clientSecret));
+
+        if ($response->failed()) {
+            throw new AuthenticationException(
+                "Failed to authenticate with 3CX XAPI on {$this->hostName} ({$response->status()}). " .
+                'Check client_id/client_secret, and that the API client\'s Department (Admin Console > ' .
+                'Integrations > API) is the tenant\'s own operating department with the System Owner role.'
+            );
+        }
+
+        $body = $response->json();
+
+        $this->accessToken = (string) $body['access_token'];
+        // Renew a little early so a request started right at the edge of expiry doesn't 401 mid-flight.
+        $this->accessTokenExpiresAt = time() + (int) ($body['expires_in'] ?? 3600) - 30;
     }
 
     protected function defaultHeaders(): array

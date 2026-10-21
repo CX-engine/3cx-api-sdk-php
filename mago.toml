@@ -2,6 +2,7 @@ php-version = "8.2"
 
 [source]
 paths = ["src"]
+includes = ["vendor"]
 
 [formatter]
 print-width = 120
@@ -16,3 +17,7 @@ trailing-comma = true
 [linter.rules.excessive-parameter-list]
 # Constructor threshold is raised for DTOs that group API parameters.
 constructor-threshold = 10
+
+[linter.rules.too-many-methods]
+# Saloon connectors have resource factory methods in addition to the auth/config methods.
+threshold = 15
