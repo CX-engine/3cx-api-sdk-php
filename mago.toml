@@ -1,0 +1,15 @@
+php-version = "8.2"
+
+[source]
+paths = ["src"]
+
+[formatter]
+print-width = 120
+use-tabs = false
+tab-width = 4
+end-of-line = "lf"
+single-quote = true
+trailing-comma = true
+
+[linter]
+rules = []
