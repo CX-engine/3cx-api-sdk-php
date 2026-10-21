@@ -3,9 +3,9 @@
 A PHP client for the 3CX **XAPI** (`/xapi/v1/...`, OData v4 REST). Built with
 [Saloon](https://docs.saloon.dev/).
 
-Read-only by design: only `GET` requests are implemented. This package is meant to
-pull call logs, agent status, queue statistics, and live call data from a 3CX
-instance — not to manage PBX configuration.
+Covers call logs, agent status, queue statistics, live calls, recordings,
+transcriptions, and AI-generated summaries. Mostly read-only `GET` requests,
+with one write: `recordings()->transcribe()` to trigger on-demand transcription.
 
 ## Installation
 
@@ -156,9 +156,53 @@ to a given queue, extract the leading DN from `Caller` and `Callee` (both follow
 the `"{DN} {Name}"` format) and match against that queue's `Agents` list from
 `queues()->list()`.
 
+### Recordings, transcription & AI
+
+```php
+// List recordings for a date range (optionally filter by phone number)
+$response = $connector->recordings()->list(
+    from: Carbon::yesterday('UTC'),
+    to: Carbon::today('UTC'),
+    callerNumber: '0612345678',
+);
+$recordings = $response->json('value');
+// [{"Id": 12345, "StartTime": "...", "IsTranscribed": true,
+//   "Transcription": "...", "Summary": "...", "SentimentScore": 4}, ...]
+
+// Fetch one recording by ID (includes all transcription fields)
+$recording = $connector->recordings()->find(12345)->json('value.0');
+
+// Trigger on-demand transcription (POST — requires transcription enabled on the PBX)
+$connector->recordings()->transcribe([12345, 12346]);
+
+// Download the audio file
+$audio = $connector->recordings()->download(12345)->body();
+
+// Supported transcription languages
+$languages = $connector->system()->transcribeLanguages()->json('value');
+
+// AI provider settings
+$ai = $connector->system()->aiSettings()->json();
+```
+
+`Transcription`, `Summary`, and `SentimentScore` are fields on the `Recording`
+entity — there is no dedicated transcription endpoint. If `IsTranscribed` is
+`false`, call `transcribe()` first and poll until `IsTranscribed` becomes `true`.
+
+> **Gotcha:** `contains()` filters on phone numbers may be rejected on some PBX
+> builds. If that happens, filter by date only and post-filter the result in PHP.
+
+### Inbound / outbound call reports
+
+```php
+$response = $connector->reports()->inboundCallsForDate(Carbon::yesterday('UTC'));
+$response = $connector->reports()->outboundCallsForDate(Carbon::yesterday('UTC'));
+```
+
+Both return one row per call with trunk, duration, and call-type breakdown.
+
 ## What this package does not do
 
-- No writes (`POST`/`PATCH`/`DELETE`) — everything here is `GET`.
 - No **Call Control API** (`/callcontrol/...`) support — that's a separate REST
   surface (not OData, different base path) for live participant control and queue
   depth.

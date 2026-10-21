@@ -8,6 +8,8 @@ use CXEngine\ThreeCx\Requests\Reports\DownloadCallLogRequest;
 use CXEngine\ThreeCx\Requests\Reports\GetAgentLoginHistoryDataRequest;
 use CXEngine\ThreeCx\Requests\Reports\GetCallLogDataRequest;
 use CXEngine\ThreeCx\Requests\Reports\GetDetailedQueueStatisticsDataRequest;
+use CXEngine\ThreeCx\Requests\Reports\GetInboundCallsRequest;
+use CXEngine\ThreeCx\Requests\Reports\GetOutboundCallsRequest;
 use CXEngine\ThreeCx\Requests\Reports\GetQueuePerformanceOverviewDataRequest;
 use CXEngine\ThreeCx\ThreeCxConnector;
 use Saloon\Http\Faking\MockClient;
@@ -23,6 +25,8 @@ beforeEach(function () {
         GetAgentLoginHistoryDataRequest::class      => MockResponse::make(['value' => []]),
         GetDetailedQueueStatisticsDataRequest::class => MockResponse::make(['value' => []]),
         GetQueuePerformanceOverviewDataRequest::class => MockResponse::make(['value' => []]),
+        GetInboundCallsRequest::class                => MockResponse::make(['value' => []]),
+        GetOutboundCallsRequest::class               => MockResponse::make(['value' => []]),
     ]);
 
     $this->connector->withMockClient($this->mock);
@@ -86,4 +90,34 @@ it('queuePerformanceOverview dispatches GetQueuePerformanceOverviewDataRequest',
     $this->connector->reports()->queuePerformanceOverview($from, $to);
 
     $this->mock->assertSent(GetQueuePerformanceOverviewDataRequest::class);
+});
+
+it('inboundCalls dispatches GetInboundCallsRequest', function () {
+    $from = Carbon::parse('2024-03-15', 'UTC');
+    $to   = Carbon::parse('2024-03-16', 'UTC');
+
+    $this->connector->reports()->inboundCalls($from, $to);
+
+    $this->mock->assertSent(GetInboundCallsRequest::class);
+});
+
+it('inboundCallsForDate dispatches for the given day', function () {
+    $this->connector->reports()->inboundCallsForDate(Carbon::parse('2024-03-15', 'UTC'));
+
+    $this->mock->assertSent(GetInboundCallsRequest::class);
+});
+
+it('outboundCalls dispatches GetOutboundCallsRequest', function () {
+    $from = Carbon::parse('2024-03-15', 'UTC');
+    $to   = Carbon::parse('2024-03-16', 'UTC');
+
+    $this->connector->reports()->outboundCalls($from, $to);
+
+    $this->mock->assertSent(GetOutboundCallsRequest::class);
+});
+
+it('outboundCallsForDate dispatches for the given day', function () {
+    $this->connector->reports()->outboundCallsForDate(Carbon::parse('2024-03-15', 'UTC'));
+
+    $this->mock->assertSent(GetOutboundCallsRequest::class);
 });

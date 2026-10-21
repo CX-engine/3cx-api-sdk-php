@@ -141,4 +141,12 @@ class ThreeCxConnector extends Connector
     {
         return new Resources\ActiveCallsResource($this);
     }
+
+    /**
+     * Recordings: list, find, download audio, and trigger transcription.
+     */
+    public function recordings(): Resources\RecordingsResource
+    {
+        return new Resources\RecordingsResource($this);
+    }
 }

@@ -8,6 +8,8 @@ use Carbon\CarbonInterface;
 use Saloon\Http\Response;
 use CXEngine\ThreeCx\Requests\Reports as Endpoints;
 use CXEngine\ThreeCx\Requests\Reports\CallLogFilters;
+use CXEngine\ThreeCx\Requests\Reports\GetInboundCallsRequest;
+use CXEngine\ThreeCx\Requests\Reports\GetOutboundCallsRequest;
 
 /**
  * Wraps the `Report*` family of XAPI OData functions used for scheduled exports.
@@ -151,5 +153,51 @@ class ReportsResource extends Resource
         $to = $from->clone()->addDay();
 
         return $this->queuePerformanceOverview($from, $to);
+    }
+
+    /**
+     * Inbound call report for a period. One row per call with trunk and duration info.
+     */
+    public function inboundCalls(
+        CarbonInterface $periodFrom,
+        CarbonInterface $periodTo,
+        string $trunkDns = '',
+        int $callsType = 0,
+    ): Response {
+        return $this->connector->send(new GetInboundCallsRequest($periodFrom, $periodTo, $trunkDns, $callsType));
+    }
+
+    /**
+     * Convenience wrapper: previous-day inbound call report.
+     */
+    public function inboundCallsForDate(CarbonInterface $date, string $timezone = 'UTC'): Response
+    {
+        $from = $date->clone()->setTimezone($timezone)->startOfDay();
+        $to = $from->clone()->addDay();
+
+        return $this->inboundCalls($from, $to);
+    }
+
+    /**
+     * Outbound call report for a period. One row per call with trunk and duration info.
+     */
+    public function outboundCalls(
+        CarbonInterface $periodFrom,
+        CarbonInterface $periodTo,
+        string $trunkDns = '',
+        int $callsType = 0,
+    ): Response {
+        return $this->connector->send(new GetOutboundCallsRequest($periodFrom, $periodTo, $trunkDns, $callsType));
+    }
+
+    /**
+     * Convenience wrapper: previous-day outbound call report.
+     */
+    public function outboundCallsForDate(CarbonInterface $date, string $timezone = 'UTC'): Response
+    {
+        $from = $date->clone()->setTimezone($timezone)->startOfDay();
+        $to = $from->clone()->addDay();
+
+        return $this->outboundCalls($from, $to);
     }
 }
