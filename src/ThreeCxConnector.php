@@ -68,6 +68,17 @@ class ThreeCxConnector extends Connector
         return $this->accessToken ?? throw new AuthenticationException('Access token is not available after refresh.');
     }
 
+    /**
+     * Drops the cached token so the next request re-authenticates. Call it
+     * after a 401: a token is revoked early whenever another token is issued
+     * for the same API client, or the client is saved in the Admin Console.
+     */
+    public function forgetAccessToken(): void
+    {
+        $this->accessToken = null;
+        $this->accessTokenExpiresAt = null;
+    }
+
     protected function refreshAccessToken(): void
     {
         $response = $this->send(new TokenRequest($this->clientId, $this->clientSecret));
@@ -124,6 +135,15 @@ class ThreeCxConnector extends Connector
     public function queues(): Resources\QueuesResource
     {
         return new Resources\QueuesResource($this);
+    }
+
+    /**
+     * Users (extensions) with their current presence profile, global queue
+     * login and registration — a snapshot only, see `ListUsersRequest`.
+     */
+    public function users(): Resources\UsersResource
+    {
+        return new Resources\UsersResource($this);
     }
 
     /**
